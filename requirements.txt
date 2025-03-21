@@ -3,4 +3,3 @@ flask
 langchain_groq
 requests
 python-dotenv
-gastapi
