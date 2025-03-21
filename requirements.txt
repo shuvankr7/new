@@ -1,5 +1,5 @@
-gunicorn
 flask
+gunicorn
 langchain_groq
 requests
 python-dotenv
