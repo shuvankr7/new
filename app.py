@@ -91,7 +91,7 @@ def process_text():
         logger.exception("Unexpected error in /process endpoint: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
-# Run Flask app
 if __name__ == "__main__":
     logger.info("Starting Flask API server...")
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)), debug=False)
+
