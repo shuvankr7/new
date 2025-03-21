@@ -3,7 +3,8 @@ import logging
 from flask import Flask, request, jsonify
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
-
+from datetime import datetime
+current_date = datetime.today().strftime('%Y-%m-%d')
 # Load environment variables
 load_dotenv()
 
@@ -48,6 +49,8 @@ def process_transaction_message(message, llm):
     system_prompt = (
         "Your input is a transaction message extracted from voice. Extract structured details like Amount, "
         "Transaction Type, Bank Name, Card Type, Paid To, Merchant, Transaction Mode, Transaction Date, Reference Number, and Tag."
+        "Transaction Type should be consistant either debit or credit"
+        "transaction date formate in dd/mm/yy"
         "Tag meaning which category of spending: if Amazon, then Shopping; if Zomato, then Eating, etc."
         "Just return the JSON output only. Don't say anything else. If no output, return null."
         "If mode of payment is not mentioned, assume cash by default."
@@ -56,7 +59,12 @@ def process_transaction_message(message, llm):
         "Handle unstructured, grammatically incorrect, and short human input."
         "Example: 'today I spent 500 at Domino's' should be extracted correctly."
         "If the user mentions multiple items with multiple prices, generate a list of JSON objects."
-    )
+        f"""
+        Today's date is {current_date}. You must use this date when interpreting time-related queries.
+        For example:
+        - If a user says "this month," assume it is the current month.
+        """
+        )
 
     input_prompt = f"{system_prompt}\nMessage: {message}"
     
