@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 from datetime import datetime
-
+ current_date = datetime.today().strftime('%Y-%m-%d')
 # Load environment variables
 load_dotenv()
 
