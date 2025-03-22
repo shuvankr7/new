@@ -11,7 +11,7 @@ app = Flask(__name__)
 @app.route("/process", methods=["POST"])
 def process_text():
     """Protected API endpoint that requires an API key."""
-    api_key = request.headers.get("X-API-KEY")  # Read API key from request header
+    api_key = request.headers.get("API_SECRET_KEY")  # Read API key from request header
 
     if not api_key or api_key != API_SECRET_KEY:
         return jsonify({"error": "Unauthorized"}), 401  # Return 401 if API key is missing or incorrect
