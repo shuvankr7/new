@@ -4,38 +4,26 @@ from flask import Flask, request, jsonify
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 from datetime import datetime
-current_date = datetime.today().strftime('%Y-%m-%d')
+
 # Load environment variables
 load_dotenv()
+
 app = Flask(__name__)
-@app.route("/process", methods=["POST"])
-def process_text():
-    """Protected API endpoint that requires an API key."""
-    api_key = request.headers.get("API_SECRET_KEY")  # Read API key from request header
 
-    if not api_key or api_key != API_SECRET_KEY:
-        return jsonify({"error": "Unauthorized"}), 401  # Return 401 if API key is missing or incorrect
-
-    # Process the request as usual
-    data = request.get_json()
-    if not data or "text" not in data:
-        return jsonify({"error": "Missing 'text' parameter"}), 400
-
-    return jsonify({"message": "Request successful", "text": data["text"]})
-# API Configuration
+# Environment Variables
+API_SECRET_KEY = os.getenv("API_SECRET_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 DEFAULT_MODEL = "llama3-70b-8192"
 DEFAULT_TEMPERATURE = 0.5
 DEFAULT_MAX_TOKENS = 1024
+CURRENT_DATE = datetime.today().strftime('%Y-%m-%d')
 
-# Initialize Flask app
-
-# Configure logging
+# Configure Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Initialize LLM System
-def initialize_rag_system():
+# Initialize LLM
+def initialize_llm():
     """Initialize the LLM system with Groq API."""
     if not GROQ_API_KEY:
         logger.error("GROQ_API_KEY is missing. Cannot initialize LLM.")
@@ -54,12 +42,12 @@ def initialize_rag_system():
 
 # Process Transaction Message
 def process_transaction_message(message, llm):
-    """Process the message using LLM and return structured JSON."""
+    """Process transaction messages and extract structured details."""
     if llm is None:
         logger.error("LLM system is not initialized.")
         return {"error": "LLM system is not initialized."}
 
-    system_prompt = (
+     system_prompt = (
         "Your input is a transaction message extracted from voice. Extract structured details like Amount, "
         "Transaction Type, Bank Name, Card Type, Paid To, Merchant, Transaction Mode, Transaction Date, Reference Number, and Tag."
         "Transaction Type should be consistant either debit or credit"
@@ -90,18 +78,26 @@ def process_transaction_message(message, llm):
         logger.exception("Error processing transaction message: %s", str(e))
         return {"error": str(e)}
 
-# API Endpoint for Backend to Send Input
+# API Endpoint with Authentication
 @app.route("/process", methods=["POST"])
 def process_text():
-    """API endpoint to process transaction messages and return structured JSON."""
+    """API endpoint to process transaction messages with authentication."""
     try:
+        # Check Authorization Header
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or auth_header != f"Bearer {API_SECRET_KEY}":
+            logger.warning("Unauthorized access attempt.")
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Validate Input
         data = request.get_json()
         if not data or "text" not in data:
             logger.warning("Invalid request: Missing 'text' parameter.")
             return jsonify({"error": "Missing 'text' parameter"}), 400
 
+        # Process Message
         logger.info("Processing transaction message: %s", data["text"])
-        llm = initialize_rag_system()
+        llm = initialize_llm()
         if llm is None:
             return jsonify({"error": "LLM initialization failed"}), 500
 
@@ -112,7 +108,7 @@ def process_text():
         logger.exception("Unexpected error in /process endpoint: %s", str(e))
         return jsonify({"error": str(e)}), 500
 
+# Start Flask App
 if __name__ == "__main__":
     logger.info("Starting Flask API server...")
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)), debug=False)
-
