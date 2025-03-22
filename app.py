@@ -7,7 +7,21 @@ from datetime import datetime
 current_date = datetime.today().strftime('%Y-%m-%d')
 # Load environment variables
 load_dotenv()
+app = Flask(__name__)
+@app.route("/process", methods=["POST"])
+def process_text():
+    """Protected API endpoint that requires an API key."""
+    api_key = request.headers.get("X-API-KEY")  # Read API key from request header
 
+    if not api_key or api_key != API_SECRET_KEY:
+        return jsonify({"error": "Unauthorized"}), 401  # Return 401 if API key is missing or incorrect
+
+    # Process the request as usual
+    data = request.get_json()
+    if not data or "text" not in data:
+        return jsonify({"error": "Missing 'text' parameter"}), 400
+
+    return jsonify({"message": "Request successful", "text": data["text"]})
 # API Configuration
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 DEFAULT_MODEL = "llama3-70b-8192"
@@ -15,7 +29,6 @@ DEFAULT_TEMPERATURE = 0.5
 DEFAULT_MAX_TOKENS = 1024
 
 # Initialize Flask app
-app = Flask(__name__)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
